@@ -92,7 +92,7 @@ func scanDirectory(directory string, recursive bool, level int) []project {
 	}
 
 	for _, subdirectory := range subdirectories {
-		subProjects := scanDirectory(path.Join(directory, subdirectory), true, level+1)
+		subProjects := scanDirectory(path.Join(directory, subdirectory), recursive, level+1)
 		projects = append(projects, subProjects...)
 	}
 
