@@ -127,4 +127,6 @@ func main() {
 
 		fmt.Printf("\n")
 	}
+
+	fmt.Printf("Total %d project(s)\n", len(projects))
 }
