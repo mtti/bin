@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gofrs/uuid"
+	"github.com/google/uuid"
 )
 
 func main() {
-	id, err := uuid.NewV4()
+	id, err := uuid.NewRandom()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
