@@ -1,4 +1,4 @@
-install-uuid4:
-	go install github.com/mtti/bin/uuid4
+all:
+	go build -o ./bin/ ./...
 
-.PHONY: install-uuid4
+.PHONY: all
