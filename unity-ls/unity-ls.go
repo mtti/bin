@@ -20,23 +20,41 @@ type project struct {
 	Version *version.Version
 }
 
-func readVersion(directory string) (string, error) {
+func readVersion(directory string) (*version.Version, error) {
 	bytes, err := ioutil.ReadFile(path.Join(directory, "ProjectVersion.txt"))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	parsed := projectVersionFile{}
 	err = yaml.Unmarshal(bytes, &parsed)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return parsed.EditorVersion, nil
+	v, err := version.NewVersion(parsed.EditorVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	return v, nil
 }
 
-func scanDirectory(directory string) []project {
+func scanDirectory(directory string, recursive bool, level int) []project {
 	projects := make([]project, 0)
+
+	v, err := readVersion(path.Join(directory, "ProjectSettings"))
+	if err == nil {
+		projects = append(projects, project{
+			Path:    directory,
+			Version: v,
+		})
+		return projects
+	}
+
+	if !recursive && level > 0 {
+		return projects
+	}
 
 	children, err := ioutil.ReadDir(directory)
 	if err != nil {
@@ -47,40 +65,18 @@ func scanDirectory(directory string) []project {
 
 	for _, child := range children {
 		name := child.Name()
-		childPath := path.Join(directory, name)
 
 		if child.IsDir() {
 			if strings.HasPrefix(name, ".") {
 				continue
 			}
 
-			if name == "ProjectSettings" {
-				rawVersion, err := readVersion(childPath)
-
-				if err != nil {
-					fmt.Printf("[WARN] %s: %s\n", childPath, err)
-					continue
-				}
-
-				v, err := version.NewVersion(rawVersion)
-				if err != nil {
-					fmt.Printf("[WARN] %s: %s\n", childPath, err)
-					continue
-				}
-
-				projects = append(projects, project{
-					Path:    directory,
-					Version: v,
-				})
-
-				continue
-			}
 			subdirectories = append(subdirectories, name)
 		}
 	}
 
 	for _, subdirectory := range subdirectories {
-		subProjects := scanDirectory(path.Join(directory, subdirectory))
+		subProjects := scanDirectory(path.Join(directory, subdirectory), true, level+1)
 		projects = append(projects, subProjects...)
 	}
 
@@ -88,7 +84,7 @@ func scanDirectory(directory string) []project {
 }
 
 func main() {
-	projects := scanDirectory(".")
+	projects := scanDirectory(".", false, 0)
 	byVersion := make(map[string][]string)
 	versions := make([]*version.Version, 0)
 
